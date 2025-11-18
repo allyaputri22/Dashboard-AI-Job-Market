@@ -3,6 +3,7 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 import plotly.colors as colors
+import os
 
 # ---------------------------------------------------------------
 # PAGE CONFIG & THEME
@@ -42,10 +43,17 @@ div[data-testid="stBlock"] { background-color: #2d3748; padding: 0px 0px; border
 # ---------------------------------------------------------------
 # LOAD DATA
 # ---------------------------------------------------------------
+import os
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+# CSV di folder data di root repo
+DATA_PATH = os.path.join(BASE_DIR, "..", "data", "clean_ai_job_market.csv")
+
+# Baca CSV
 try:
-    df = pd.read_csv("../data/clean_ai_job_market.csv")
+    df = pd.read_csv(DATA_PATH)
 except FileNotFoundError:
-    st.error("File 'clean_ai_job_market.csv' tidak ditemukan.")
+    st.error(f"File CSV tidak ditemukan di path: {DATA_PATH}")
     st.stop()
 
 # Preprocessing
