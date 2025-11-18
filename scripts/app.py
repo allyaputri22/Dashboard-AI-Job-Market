@@ -30,7 +30,7 @@ div[data-testid="stBlock"] { background-color: #2d3748; padding: 0px 0px; border
 .chart-card-title { font-size: 15px; font-weight: 800; margin: 0; color: #f7fafc; text-align: center; padding: 15px 20px; border-top-right-radius: 15px; border-top-left-radius: 15px; border-bottom: 1px solid #4a5568; }
 
 /* KPI */
-.kpi-box { background-color: #2d3748; padding: 20px 22px; border-radius: 12px; text-align: center; box-shadow: 0 4px 10px rgba(0,0,0,0.2); border-left: 4px solid #00BFFF; margin-bottom: 0px; }
+.kpi-box { background-color: #2d3748; padding: 20px 22px; border-radius: 12px; text-align: center; box-shadow: 0 4px 10px rgba(0,0,0,0.2); border-left: 4px solid #00BFFF; min-height: 150px; display: flex; flex-direction: column; justify-content: center; }
 .kpi-label { font-size: 13px; color: #a0aec0; margin-bottom: 5px; }
 .kpi-value { font-size: 28px; font-weight: 800; color: #00BFFF; }
 
@@ -89,7 +89,7 @@ df_filtered = df_filtered[df_filtered['experience_level'].isin(selected_exp)]
 
 # ---------------------------------------------------------------
 # HEADER & KPI (Total Lowongan + Pekerjaan + Skill + Rata-rata Gaji)
-# ---------------------------------------------------------------
+# ----------------------------------------------------------------
 st.markdown("<div class='header-box'><span class='header-title'>Dashboard Tren Lowongan Pekerjaan di Bidang AI</span></div>", unsafe_allow_html=True)
 
 # Hitung total lowongan
@@ -137,7 +137,7 @@ if selected_year != "All":
         """
 else:
     job_count_selected_year = total_jobs
-    job_count_delta_html = ""  # Tidak ada delta untuk "All"
+    job_count_delta_html = "" 
 
 # ---------------------------------------------------------------
 # Tampilkan KPI
@@ -184,12 +184,10 @@ with col4:
 
 st.markdown("---")
 
-
-
 # ---------------------------------------------------------------
 # SECTION 1: Tren + Company Size
 # ---------------------------------------------------------------
-st.markdown("""<div class='section-separator'><p class='section-separator-title'>Tren Lowongan per Tahun + Persebaran Company Size</p></div>""", unsafe_allow_html=True)
+st.markdown("""<div class='section-separator'><p class='section-separator-title'>Tren Lowongan per Tahun + Pekerjaan Berdasarkan Industri</p></div>""", unsafe_allow_html=True)
 c1, c2 = st.columns(2)
 
 # Tren Lowongan
@@ -200,22 +198,47 @@ with c1:
     fig1.update_layout(height=280, margin=dict(l=20,r=20,t=20,b=20), plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)', xaxis=dict(type='category'))
     st.plotly_chart(fig1, use_container_width=True)
 
-# Company Size
+# Industry
 with c2:
-    st.markdown("<div class='chart-card-title'>Persebaran Ukuran Perusahaan</div>", unsafe_allow_html=True)
-    company_size_count = df_filtered["company_size"].value_counts().reset_index()
-    company_size_count.columns = ["Company Size", "Jumlah Lowongan"]
-    fig2 = px.bar(company_size_count, x="Company Size", y="Jumlah Lowongan", color_discrete_sequence=[blue_cyan[2]], template=plotly_template)
-    fig2.update_layout(height=280, margin=dict(l=20,r=20,t=20,b=20), plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)')
-    st.plotly_chart(fig2, use_container_width=True)
+    st.markdown("<div class='chart-card-title'>Pekerjaan Berdasarkan Industri</div>", unsafe_allow_html=True)
+    st.markdown("<div style='height: 38px;'></div>", unsafe_allow_html=True)  # spacing
+
+    # Hitung jumlah lowongan per industri
+    df_ind = df_filtered["industry"].dropna().value_counts().reset_index()
+    df_ind.columns = ["Industry", "Jumlah Lowongan"]
+
+    # Normalisasi untuk skala warna
+    norm = (df_ind["Jumlah Lowongan"] - df_ind["Jumlah Lowongan"].min()) / (df_ind["Jumlah Lowongan"].max() - df_ind["Jumlah Lowongan"].min())
+    color_scale = [colors.find_intermediate_color('rgb(198, 219, 239)', 'rgb(8, 48, 107)', v, colortype='rgb') for v in norm]
+
+    # Buat bar chart tanpa angka di atas
+    fig5 = go.Figure(
+        go.Bar(
+            x=df_ind["Industry"],
+            y=df_ind["Jumlah Lowongan"],
+            marker_color=color_scale
+        )
+    )
+
+    fig5.update_layout(
+        height=300,
+        margin=dict(t=30,b=30,l=10,r=10),
+        plot_bgcolor='rgba(0,0,0,0)',
+        paper_bgcolor='rgba(0,0,0,0)',
+        xaxis_tickangle=45,
+        yaxis_title="Jumlah Lowongan",
+        xaxis_title="Industri"
+    )
+
+    st.plotly_chart(fig5, use_container_width=True)
 
 st.markdown("---")
 
 # ---------------------------------------------------------------
 # SECTION 2: Skills – Job Title – Industry
 # ---------------------------------------------------------------
-st.markdown("<div class='section-separator'><p class='section-separator-title'>Skill – Job Title – Industry</p></div>", unsafe_allow_html=True)
-c4, c3, c5 = st.columns(3)
+st.markdown("<div class='section-separator'><p class='section-separator-title'>Skill dan Pekerjaan paling banyak dicari</p></div>", unsafe_allow_html=True)
+c4, c3 = st.columns(2)
 
 # Top Skills
 with c4:
@@ -228,61 +251,65 @@ with c4:
 
 # Top Job Titles
 with c3:
-    st.markdown("<div class='chart-card-title'>Top 10 Pekerjaan Paling Dicari</div>", unsafe_allow_html=True)
+    st.markdown("<div class='chart-card-title'>Pekerjaan Paling Dicari</div>", unsafe_allow_html=True)
     job_count = df_filtered["job_title"].value_counts().head(10).reset_index()
     job_count.columns = ["Pekerjaan", "Jumlah Lowongan"]
     fig3 = px.bar(job_count, x="Pekerjaan", y="Jumlah Lowongan", color_discrete_sequence=[blue_cyan[2]], template=plotly_template)
     fig3.update_layout(height=300, plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)', xaxis_tickangle=45)
     st.plotly_chart(fig3, use_container_width=True)
 
-# Industry
-with c5:
-    st.markdown("<div class='chart-card-title'>Pekerjaan Berdasarkan Industri</div>", unsafe_allow_html=True)
-    st.markdown("<div style='height: 38px;'></div>", unsafe_allow_html=True)  # spacing
-
-    df_ind = df_filtered["industry"].value_counts().reset_index()
-    df_ind.columns = ["Industry", "Jumlah"]
-
-    # Normalisasi nilai ke 0-1 untuk skala warna
-    norm = (df_ind["Jumlah"] - df_ind["Jumlah"].min()) / (df_ind["Jumlah"].max() - df_ind["Jumlah"].min())
-    color_scale = [colors.find_intermediate_color('rgb(198, 219, 239)', 'rgb(8, 48, 107)', v, colortype='rgb') for v in norm]
-
-    fig5 = go.Figure(
-        go.Pie(
-            labels=df_ind["Industry"],
-            values=df_ind["Jumlah"],
-            marker=dict(colors=color_scale),
-            sort=False,
-            hovertemplate="<b>%{label}</b><br>Jumlah Lowongan: %{value}<extra></extra>"
-        )
-    )
-
-    fig5.update_layout(
-        height=300, 
-        margin=dict(t=30,b=30,l=10,r=10),
-        plot_bgcolor='rgba(0,0,0,0)',
-        paper_bgcolor='rgba(0,0,0,0)'
-    )
-
-    st.plotly_chart(fig5, use_container_width=True)
-    
 st.markdown("---")
+
 
 # ---------------------------------------------------------------
 # SECTION 3: Analisis Gaji & Heatmap Level Pengalaman
 # ---------------------------------------------------------------
-st.markdown("<div class='section-separator'><p class='section-separator-title'>Analisis Gaji dan Tren Level Pengalaman</p></div>", unsafe_allow_html=True)
+st.markdown("<div class='section-separator'><p class='section-separator-title'>Analisis Gaji dan Tren Permintaan Lowongan Berdasarkan Level Pengalaman</p></div>", unsafe_allow_html=True)
 c_gaji, c_heatmap = st.columns(2)
 
 # Gaji
 with c_gaji:
     st.markdown("<div class='chart-card-title'>Rata-rata Gaji Berdasarkan Pekerjaan dan Level Pengalaman</div>", unsafe_allow_html=True)
+    
+    # Ambil data gaji yang ada
     df_salary = df_filtered.dropna(subset=["salary_avg"])
-    salary_job_exp = df_salary.groupby(["job_title","experience_level"])["salary_avg"].mean().reset_index()
-    salary_colors = {'entry': '#00BFFF', 'mid': '#1E90FF', 'senior': '#4682B4'}
-    fig_salary = px.bar(salary_job_exp, x='job_title', y='salary_avg', color='experience_level', color_discrete_map=salary_colors, barmode='group', template=plotly_template, labels={'job_title':'Job Title','salary_avg':'Rata-rata Gaji (USD)','experience_level':'Level'})
-    fig_salary.update_layout(height=350, margin=dict(l=60,r=20,t=40,b=20), xaxis_tickangle=45, plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)')
-    st.plotly_chart(fig_salary, use_container_width=True)
+    
+    if not df_salary.empty:
+        # 1. Hitung rata-rata gaji per pekerjaan (tanpa memisahkan level)
+        avg_salary_per_job = df_salary.groupby("job_title")["salary_avg"].mean().sort_values(ascending=False)
+        
+        # 2. Ubah 'job_title' menjadi kategori dengan urutan gaji tertinggi ke terendah
+        df_salary["job_title"] = pd.Categorical(df_salary["job_title"], categories=avg_salary_per_job.index, ordered=True)
+        
+        # 3. Hitung rata-rata gaji per pekerjaan dan level
+        salary_job_exp = df_salary.groupby(["job_title","experience_level"])["salary_avg"].mean().reset_index()
+        
+        # 4. Warna per level pengalaman
+        salary_colors = {'entry': '#00BFFF', 'mid': '#1E90FF', 'senior': '#4682B4'}
+        
+        # 5. Buat bar chart
+        fig_salary = px.bar(
+            salary_job_exp, 
+            x='job_title', 
+            y='salary_avg', 
+            color='experience_level', 
+            color_discrete_map=salary_colors, 
+            barmode='group', 
+            template=plotly_template, 
+            labels={'job_title':'Job Title','salary_avg':'Rata-rata Gaji (USD)','experience_level':'Level'}
+        )
+        
+        fig_salary.update_layout(
+            height=350, 
+            margin=dict(l=60,r=20,t=40,b=20), 
+            xaxis_tickangle=45, 
+            plot_bgcolor='rgba(0,0,0,0)', 
+            paper_bgcolor='rgba(0,0,0,0)'
+        )
+        
+        st.plotly_chart(fig_salary, use_container_width=True)
+    else:
+        st.info("Tidak ada data gaji untuk filter yang dipilih.")
 
 # Heatmap Level
 with c_heatmap:
@@ -314,7 +341,7 @@ with c_heatmap:
         paper_bgcolor='rgba(0,0,0,0)',
         margin=dict(l=20,r=20,t=20,b=20),
         xaxis=dict(tickmode='linear'),
-        yaxis=dict(autorange='reversed')  # supaya senior di atas
+        yaxis=dict(autorange='reversed')  
     )
     
     st.plotly_chart(fig_heatmap, use_container_width=True)
