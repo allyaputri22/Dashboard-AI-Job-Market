@@ -37,6 +37,59 @@ div[data-testid="stBlock"] { background-color: #2d3748; padding: 0px 0px; border
 /* HEADER */
 .header-box { background-color: #2d3748; padding: 25px 35px; border-radius: 15px; margin-bottom: 20px; box-shadow: 0 5px 15px rgba(0,0,0,0.4); border-left: 6px solid #1E90FF; justify-content: center; display: flex; }
 .header-title { font-size: 24px; font-weight: 800; color: #f7fafc; }
+            
+            
+/* Background utama */
+html, body, .stApp {
+    background-color: #1e293b !important;
+    color: #f7fafc !important;
+}
+
+/* Container utama (bagian tengah Streamlit) */
+.stAppViewContainer, .main, .block-container {
+    background-color: #1e293b !important;
+    color: #f7fafc !important;
+}
+
+/* Header, box, container yang masih ke-reset mode-light */
+header, .st-emotion-cache-12fmjuu, .st-emotion-cache-18ni7ap {
+    background-color: #2d3748 !important;
+    color: #f7fafc !important;
+}
+
+/* Sidebar tetap dark */
+[data-testid="stSidebar"] {
+    background-color: #2d3748 !important;
+    color: #f7fafc !important;
+}
+
+/* Label komponen input (selectbox, slider, multiselect) */
+.stSelectbox label, .stMultiSelect label, .stSlider label {
+    color: #f7fafc !important;
+}
+
+/* Kotak input & dropdown */
+.stSelectbox div[data-baseweb="select"],
+.stMultiSelect div[data-baseweb="select"] {
+    background-color: #334155 !important;
+    color: #f7fafc !important;
+}
+
+.stSelectbox div, .stMultiSelect div {
+    color: #f7fafc !important;
+}
+
+/* Dropdown item */
+ul[role="listbox"] > li {
+    background-color: #1e293b !important;
+    color: #f7fafc !important;
+}
+
+/* Header box & all cards biar ga ikut berubah */
+.header-box, .kpi-box, .chart-card-title, div[data-testid="stBlock"] {
+    background-color: #2d3748 !important;
+    color: #f7fafc !important;
+}
 </style>
 """, unsafe_allow_html=True)
 
@@ -90,7 +143,7 @@ df_filtered = df_filtered[df_filtered['experience_level'].isin(selected_exp)]
 # ---------------------------------------------------------------
 # HEADER & KPI (Total Lowongan + Pekerjaan + Skill + Rata-rata Gaji)
 # ----------------------------------------------------------------
-st.markdown("<div class='header-box'><span class='header-title'>Dashboard Tren Lowongan Pekerjaan di Bidang AI</span></div>", unsafe_allow_html=True)
+st.markdown("<div class='header-box'><span class='header-title'>Tren Lowongan Pekerjaan di Bidang AI Tahun 2023 - 2025</span></div>", unsafe_allow_html=True)
 
 # Hitung total lowongan
 total_jobs = len(df_filtered)
@@ -275,17 +328,14 @@ with c_gaji:
     df_salary = df_filtered.dropna(subset=["salary_avg"])
     
     if not df_salary.empty:
-        # 1. Hitung rata-rata gaji per pekerjaan (tanpa memisahkan level)
         avg_salary_per_job = df_salary.groupby("job_title")["salary_avg"].mean().sort_values(ascending=False)
         
-        # 2. Ubah 'job_title' menjadi kategori dengan urutan gaji tertinggi ke terendah
         df_salary["job_title"] = pd.Categorical(df_salary["job_title"], categories=avg_salary_per_job.index, ordered=True)
         
-        # 3. Hitung rata-rata gaji per pekerjaan dan level
         salary_job_exp = df_salary.groupby(["job_title","experience_level"])["salary_avg"].mean().reset_index()
         
-        # 4. Warna per level pengalaman
-        salary_colors = {'entry': '#00BFFF', 'mid': '#1E90FF', 'senior': '#4682B4'}
+        salary_colors = {'entry': '#FFFFFF', 'mid': '#A7D9FF', 'senior': '#005B99'   
+}
         
         # 5. Buat bar chart
         fig_salary = px.bar(
@@ -322,16 +372,26 @@ with c_heatmap:
     pivot_data = pivot_data.reindex(['senior','mid','entry'])
     
     fig_heatmap = go.Figure(
-        go.Heatmap(
-            z=pivot_data.values,
-            x=pivot_data.columns.astype(str),
-            y=pivot_data.index.str.title(),
-            colorscale='Blues',
-            hovertemplate='Tahun: %{x}<br>Level: %{y}<br>Jumlah: %{z}<extra></extra>',
-            xgap=2,  # jarak antar kolom
-            ygap=2   # jarak antar baris
+    go.Heatmap(
+        z=pivot_data.values,
+        x=pivot_data.columns.astype(str),
+        y=pivot_data.index.str.title(),
+        colorscale='Blues',
+        hovertemplate='Tahun: %{x}<br>Level: %{y}<br>Jumlah: %{z}<extra></extra>',
+        xgap=2,
+        ygap=2,
+        colorbar=dict(
+            title=dict(
+                text="Jumlah Lowongan",
+                side="right"   # ini yang bikin miring vertikal seperti sumbu Y
+            ),
+            thickness=12,
+            len=0.8,
+            outlinewidth=0
         )
     )
+)
+
     
     fig_heatmap.update_layout(
         height=350,
@@ -339,9 +399,10 @@ with c_heatmap:
         yaxis_title='Level Pengalaman',
         plot_bgcolor='rgba(0,0,0,0)',
         paper_bgcolor='rgba(0,0,0,0)',
-        margin=dict(l=20,r=20,t=20,b=20),
+        margin=dict(l=20, r=20, t=20, b=20),
         xaxis=dict(tickmode='linear'),
-        yaxis=dict(autorange='reversed')  
+        yaxis=dict(autorange='reversed')
     )
     
     st.plotly_chart(fig_heatmap, use_container_width=True)
+st.markdown("---")
